@@ -2,25 +2,17 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer, PorterStemmer
 import re
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.datasets import fetch_20newsgroups
-
-# Download NLTK data
-nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('punkt')
 
 # Set page config
 st.set_page_config(page_title="Text Classification Lab", page_icon="📝", layout="wide")
@@ -47,14 +39,18 @@ def preprocess_text(text):
     text = text.lower()
     # Punctuation removal
     text = re.sub(r'[^\w\s]', '', text)
-    # Tokenization
-    tokens = word_tokenize(text)
+    # Tokenization using a regex-based approach
+    tokens = re.findall(r'\b\w+\b', text)
     # Stopword removal
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(ENGLISH_STOP_WORDS)
     tokens = [word for word in tokens if word not in stop_words]
-    # Lemmatization
+    # Lemmatization (fallback to stemming if WordNet is unavailable)
     lemmatizer = WordNetLemmatizer()
-    tokens = [lemmatizer.lemmatize(word) for word in tokens]
+    try:
+        tokens = [lemmatizer.lemmatize(word) for word in tokens]
+    except LookupError:
+        stemmer = PorterStemmer()
+        tokens = [stemmer.stem(word) for word in tokens]
     return ' '.join(tokens)
 
 # Train models
